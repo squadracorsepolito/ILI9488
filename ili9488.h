@@ -1,10 +1,9 @@
 /**
  * @file    ili9488.h
- * @author  Matteo Giuliani [matteo.giuliani.sc@gmail.com]
- * @date    2024-11-07 (date of creation)
- * @updated 202x-xx-xx (date of last update)
+ * @author  Matteo Giuliani [matteo.giuliani.sc@gmail.com || glnmatteo0@gmail.com]
+ * @date    2024-12-19 (date of creation)
  * @version v0.0.1
- * @prefix  TMP
+ * @prefix  ILI9488
  *
  * @brief   Header file of the ILI9488 driver
  *
@@ -13,11 +12,10 @@
  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef _ILI9488_H
-#define _ILI9488_H
+#ifndef _ILI9488_H_
+#define _ILI9488_H_
 
 // Parameter settings
-#define SPI_MODE        1 
 #define HORIZONTAL_RES  480
 #define VERTICAL_RES    320 
 #define LANDSCAPE       1
@@ -83,32 +81,17 @@
 extern SPI_HandleTypeDef hspi3;
 
 /* ---------- Exported constants ---------------------------------------------*/
-
-
 /* ---------- Exported variables ---------------------------------------------*/
-
-
 /* ---------- Exported macros ------------------------------------------------*/
-
-
 /* ---------- Exported functions ---------------------------------------------*/
-
-
+void ILI9488_spi_send(unsigned char data);
+void ILI9488_write_data(unsigned char data)
+void ILI9488_write_command(unsigned char data);
+void ILI9488_init();
+void ILI9488_set_draw_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2);
 /* ---------- Private types --------------------------------------------------*/
-void spi_write(unsigned char data);
-void lcd_write_command(unsigned char data);
-void lcd_write_data(unsigned char data);
-void lcd_init_spi();
-void swap_int(unsigned int *num1, unsigned int *num2);
-void lcd_init_command_list(void);
-void set_draw_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2);
 /* ---------- Private variables ----------------------------------------------*/
-
-
 /* ---------- Private constants ----------------------------------------------*/
-
-
 /* ---------- Private Macros -------------------------------------------------*/
-
 
 #endif
