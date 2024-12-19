@@ -85,7 +85,7 @@ extern SPI_HandleTypeDef hspi3;
 /* ---------- Exported macros ------------------------------------------------*/
 /* ---------- Exported functions ---------------------------------------------*/
 void ILI9488_spi_send(unsigned char data);
-void ILI9488_write_data(unsigned char data)
+void ILI9488_write_data(unsigned char data);
 void ILI9488_write_command(unsigned char data);
 void ILI9488_init();
 void ILI9488_set_draw_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2);
