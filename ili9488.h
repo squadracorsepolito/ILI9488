@@ -75,20 +75,27 @@
 #define ILI9488_GMCTRN1 0xE1
 
 /* ---------- Includes -------------------------------------------------------*/
-#include "main.h"
+#include "spi.h"
 
 /* ---------- Exported types -------------------------------------------------*/
-extern SPI_HandleTypeDef hspi3;
-
+struct ILI9488_GPIO_Tuple {
+    GPIO_TypeDef *GPIO_Port;
+    uint16_t GPIO_Pin;
+};
 /* ---------- Exported constants ---------------------------------------------*/
+#define ILI9488_SPI_Handle hspi3
 /* ---------- Exported variables ---------------------------------------------*/
 /* ---------- Exported macros ------------------------------------------------*/
 /* ---------- Exported functions ---------------------------------------------*/
-void ILI9488_spi_send(unsigned char data);
+void ILI9488_SPI_send(unsigned char data);
+void ILI9488_SPI_DMA_send(uint8_t* data, uint16_t size);
 void ILI9488_write_data(unsigned char data);
 void ILI9488_write_command(unsigned char data);
 void ILI9488_init();
 void ILI9488_set_draw_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2);
+void ILI9488_CS_set_state(uint8_t state);
+void ILI9488_DC_set_state(uint8_t state);
+void ILI9488_RST_set_state(uint8_t state);
 /* ---------- Private types --------------------------------------------------*/
 /* ---------- Private variables ----------------------------------------------*/
 /* ---------- Private constants ----------------------------------------------*/

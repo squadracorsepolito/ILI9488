@@ -20,7 +20,12 @@
 /*---------- Private macro ---------------------------------------------------*/
 
 /*---------- Private variables -----------------------------------------------*/
-
+enum ILI9488_Device{CS, RST, DC, ILI9488_Device_NUM};
+static const struct ILI9488_GPIO_Tuple ILI9488_Device_to_GPIO_Tuple_map[ILI9488_Device_NUM] = {
+    [CS]  = {.GPIO_Port = LCD_TFT_CS_GPIO_OUT_GPIO_Port, .GPIO_Pin = LCD_TFT_CS_GPIO_OUT_Pin},
+    [DC]  = {.GPIO_Port = LCD_TFT_DC_GPIO_OUT_GPIO_Port, .GPIO_Pin = LCD_TFT_DC_GPIO_OUT_Pin},
+    [RST] = {.GPIO_Port = LCD_TFT_RST_GPIO_OUT_GPIO_Port, .GPIO_Pin = LCD_TFT_RST_GPIO_OUT_Pin},
+};
 /*---------- Private function prototypes -------------------------------------*/
 void ILI9488_swap_int(unsigned int *num1, unsigned int *num2);
 void ILI9488_init_command_list(void);
@@ -30,58 +35,69 @@ void ILI9488_init_command_list(void);
 
 /*---------- Private Functions -----------------------------------------------*/
 
+void ILI9488_CS_set_state(uint8_t state) {
+    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, state);
+}
+void ILI9488_DC_set_state(uint8_t state) {
+    HAL_GPIO_WritePin(LCD_TFT_DC_GPIO_OUT_GPIO_Port, LCD_TFT_DC_GPIO_OUT_Pin, state);
+}
+void ILI9488_RST_set_state(uint8_t state) {
+    HAL_GPIO_WritePin(LCD_TFT_RST_GPIO_OUT_GPIO_Port, LCD_TFT_RST_GPIO_OUT_Pin, state);
+}
+
 /*
  * Writes a byte to SPI without changing chip select (CS) state.
  */
-void ILI9488_spi_send(unsigned char data)
-{
-    HAL_SPI_Transmit(&hspi3, &data, 1, 10);
-    while (HAL_SPI_GetState(&hspi3) != HAL_SPI_STATE_READY);
+void ILI9488_SPI_send(unsigned char data) {
+    HAL_SPI_Transmit(&ILI9488_SPI_Handle, &data, 1, 10);
+}
+
+void ILI9488_SPI_DMA_send(uint8_t *data, uint16_t size) {
+    ILI9488_DC_set_state(GPIO_PIN_SET);
+    ILI9488_CS_set_state(GPIO_PIN_RESET);
+
+    HAL_SPI_Transmit_DMA(&ILI9488_SPI_Handle, data, size);
 }
 
 /*
  * Writes a data byte to the display. Pulls CS low as required.
  */
-void ILI9488_write_data(unsigned char data)
-{
-    HAL_GPIO_WritePin(LCD_TFT_DC_GPIO_OUT_GPIO_Port, LCD_TFT_DC_GPIO_OUT_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, GPIO_PIN_RESET);
-    ILI9488_spi_send(data);
-    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, GPIO_PIN_SET);
+void ILI9488_write_data(unsigned char data) {
+    ILI9488_DC_set_state(GPIO_PIN_SET);
+    ILI9488_CS_set_state(GPIO_PIN_RESET);
+    ILI9488_SPI_send(data);
+    ILI9488_CS_set_state(GPIO_PIN_SET);
 }
 
 /*
  * Writes a command byte to the display
  */
-void ILI9488_write_command(unsigned char data)
-{
-    HAL_GPIO_WritePin(LCD_TFT_DC_GPIO_OUT_GPIO_Port, LCD_TFT_DC_GPIO_OUT_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, GPIO_PIN_RESET);
-    ILI9488_spi_send(data);
-    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, GPIO_PIN_SET);
+void ILI9488_write_command(unsigned char data) {
+    ILI9488_DC_set_state(GPIO_PIN_RESET);
+    ILI9488_CS_set_state(GPIO_PIN_RESET);
+    ILI9488_SPI_send(data);
+    ILI9488_CS_set_state(GPIO_PIN_SET);
 }
 
 /*
  * Swaps two 16-bit integers
  */
-void ILI9488_swap_int(unsigned int *num1, unsigned int *num2)
-{
+void ILI9488_swap_int(unsigned int *num1, unsigned int *num2) {
     int temp = *num2;
-    *num2 = *num1;
-    *num1 = temp;
+    *num2    = *num1;
+    *num1    = temp;
 }
 
 /*
  * Same as above, but initialises with an SPI port instead.
  */
-void ILI9488_init()
-{
-    HAL_GPIO_WritePin(LCD_TFT_RST_GPIO_OUT_GPIO_Port, LCD_TFT_RST_GPIO_OUT_Pin, GPIO_PIN_SET); 
-    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, GPIO_PIN_SET);   
-    HAL_GPIO_WritePin(LCD_TFT_DC_GPIO_OUT_GPIO_Port, LCD_TFT_DC_GPIO_OUT_Pin, GPIO_PIN_SET);  
-    HAL_GPIO_WritePin(LCD_TFT_RST_GPIO_OUT_GPIO_Port, LCD_TFT_RST_GPIO_OUT_Pin, GPIO_PIN_RESET);
+void ILI9488_init() {
+    ILI9488_RST_set_state(GPIO_PIN_SET);
+    ILI9488_CS_set_state(GPIO_PIN_SET);
+    ILI9488_DC_set_state(GPIO_PIN_SET);
+    ILI9488_RST_set_state(GPIO_PIN_RESET);
     HAL_Delay(120);
-    HAL_GPIO_WritePin(LCD_TFT_RST_GPIO_OUT_GPIO_Port, LCD_TFT_RST_GPIO_OUT_Pin, GPIO_PIN_SET);
+    ILI9488_RST_set_state(GPIO_PIN_SET);
     HAL_Delay(120);
 
     ILI9488_init_command_list();
@@ -90,10 +106,9 @@ void ILI9488_init()
 /**
  * This is the magic initialisation routine.
  */
-void ILI9488_init_command_list(void)
-{
+void ILI9488_init_command_list(void) {
     //********Start Initial Sequence*******//
-    ILI9488_write_command(0xE0); // P-Gamma
+    ILI9488_write_command(0xE0);  // P-Gamma
     ILI9488_write_data(0x00);
     ILI9488_write_data(0x13);
     ILI9488_write_data(0x18);
@@ -109,7 +124,7 @@ void ILI9488_init_command_list(void)
     ILI9488_write_data(0x30);
     ILI9488_write_data(0x3E);
     ILI9488_write_data(0x0F);
-    ILI9488_write_command(0XE1); // N-Gamma
+    ILI9488_write_command(0XE1);  // N-Gamma
     ILI9488_write_data(0x00);
     ILI9488_write_data(0x13);
     ILI9488_write_data(0x18);
@@ -130,12 +145,12 @@ void ILI9488_init_command_list(void)
     ILI9488_write_data(0x16);
     ILI9488_write_command(0xC1);
     ILI9488_write_data(0x45);
-    ILI9488_write_command(0xC5); // VCOM
+    ILI9488_write_command(0xC5);  // VCOM
     ILI9488_write_data(0x00);
     ILI9488_write_data(0x63);
     ILI9488_write_data(0x01);
 
-    ILI9488_write_command(0x36); // RAM address mode
+    ILI9488_write_command(0x36);  // RAM address mode
     // 0xF8 and 0x3C are landscape mode. 0x5C and 0x9C for portrait mode.
     if (LANDSCAPE)
         ILI9488_write_data(0xF8);
@@ -143,16 +158,16 @@ void ILI9488_init_command_list(void)
         ILI9488_write_data(0x5C);
 
     ILI9488_write_command(0x3A);  // Interface Mode Control
-    ILI9488_write_data(0x66); // 16-bit serial mode
+    ILI9488_write_data(0x66);     // 16-bit serial mode
     ILI9488_write_command(0xB0);  // Interface Mode Control
-    ILI9488_write_data(0x80); // SDO not in use
+    ILI9488_write_data(0x80);     // SDO not in use
     ILI9488_write_command(0xB1);  // Frame rate 70HZ
-    ILI9488_write_data(0x00); //
+    ILI9488_write_data(0x00);     //
     ILI9488_write_data(0x10);
     ILI9488_write_command(0xB4);
     ILI9488_write_data(0x02);
 
-    ILI9488_write_command(0xB6); // RGB/MCU Interface Control
+    ILI9488_write_command(0xB6);  // RGB/MCU Interface Control
     ILI9488_write_data(0x02);
     // ILI9488_write_data(0x22);
 
@@ -165,7 +180,7 @@ void ILI9488_init_command_list(void)
     ILI9488_write_data(0x82);
     ILI9488_write_command(0x11);
     HAL_Delay(120);
-    ILI9488_write_command(0x20); // change it to 0x21 if you want to invert colors
+    ILI9488_write_command(0x20);  // change it to 0x21 if you want to invert colors
 
     HAL_Delay(120);
     ILI9488_write_command(0x29);
@@ -176,8 +191,7 @@ void ILI9488_init_command_list(void)
  * Should only be called within a function that draws something
  * to the display.
  */
-void ILI9488_set_draw_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
-{
+void ILI9488_set_draw_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2) {
     // Check that the values are in order
     if (x2 < x1)
         ILI9488_swap_int(&x2, &x1);
