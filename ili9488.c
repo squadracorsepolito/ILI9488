@@ -36,8 +36,7 @@ void ILI9488_init_command_list(void);
 void ILI9488_spi_send(unsigned char data)
 {
     HAL_SPI_Transmit(&hspi3, &data, 1, 10);
-    while (HAL_SPI_GetState(&hspi3) != HAL_SPI_STATE_READY)
-        ;
+    while (HAL_SPI_GetState(&hspi3) != HAL_SPI_STATE_READY);
 }
 
 /*
@@ -45,10 +44,10 @@ void ILI9488_spi_send(unsigned char data)
  */
 void ILI9488_write_data(unsigned char data)
 {
-    HAL_GPIO_WritePin(LCD_TFT_DC_GPIO_Port, LCD_TFT_DC_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_Port, LCD_TFT_CS_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LCD_TFT_DC_GPIO_OUT_GPIO_Port, LCD_TFT_DC_GPIO_OUT_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, GPIO_PIN_RESET);
     ILI9488_spi_send(data);
-    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_Port, LCD_TFT_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, GPIO_PIN_SET);
 }
 
 /*
@@ -56,10 +55,10 @@ void ILI9488_write_data(unsigned char data)
  */
 void ILI9488_write_command(unsigned char data)
 {
-    HAL_GPIO_WritePin(LCD_TFT_DC_GPIO_Port, LCD_TFT_DC_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_Port, LCD_TFT_CS_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LCD_TFT_DC_GPIO_OUT_GPIO_Port, LCD_TFT_DC_GPIO_OUT_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, GPIO_PIN_RESET);
     ILI9488_spi_send(data);
-    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_Port, LCD_TFT_CS_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, GPIO_PIN_SET);
 }
 
 /*
@@ -77,13 +76,12 @@ void ILI9488_swap_int(unsigned int *num1, unsigned int *num2)
  */
 void ILI9488_init()
 {
-    // SET control pins for the LCD HIGH (they are active LOW)
-    HAL_GPIO_WritePin(LCD_TFT_RST_GPIO_Port, LCD_TFT_RST_Pin, GPIO_PIN_SET); // RESET pin HIGH (Active LOW)
-    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_Port, LCD_TFT_CS_Pin, GPIO_PIN_SET);   // Chip Select Active LOW
-    HAL_GPIO_WritePin(LCD_TFT_DC_GPIO_Port, LCD_TFT_DC_Pin, GPIO_PIN_SET);   // Data / Command select Active LOW
-    HAL_GPIO_WritePin(LCD_TFT_RST_GPIO_Port, LCD_TFT_RST_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LCD_TFT_RST_GPIO_OUT_GPIO_Port, LCD_TFT_RST_GPIO_OUT_Pin, GPIO_PIN_SET); 
+    HAL_GPIO_WritePin(LCD_TFT_CS_GPIO_OUT_GPIO_Port, LCD_TFT_CS_GPIO_OUT_Pin, GPIO_PIN_SET);   
+    HAL_GPIO_WritePin(LCD_TFT_DC_GPIO_OUT_GPIO_Port, LCD_TFT_DC_GPIO_OUT_Pin, GPIO_PIN_SET);  
+    HAL_GPIO_WritePin(LCD_TFT_RST_GPIO_OUT_GPIO_Port, LCD_TFT_RST_GPIO_OUT_Pin, GPIO_PIN_RESET);
     HAL_Delay(120);
-    HAL_GPIO_WritePin(LCD_TFT_RST_GPIO_Port, LCD_TFT_RST_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LCD_TFT_RST_GPIO_OUT_GPIO_Port, LCD_TFT_RST_GPIO_OUT_Pin, GPIO_PIN_SET);
     HAL_Delay(120);
 
     ILI9488_init_command_list();
