@@ -15,6 +15,23 @@
 #ifndef _ILI9488_H_
 #define _ILI9488_H_
 
+/* ---------- Includes -------------------------------------------------------*/
+#include "stdint.h"
+
+/* ---------- Exported types -------------------------------------------------*/
+
+enum ILI9488_PinState { PinState_Reset = 0, PinState_Set };
+enum ILI9488_Status { Status_OK = 0, Status_ERR, Status_Busy, Status_Timeout };
+
+struct ILI9488_Handle {
+    void (*CS_SetState)(enum ILI9488_PinState state);
+    void (*DC_RS_SetState)(enum ILI9488_PinState state);
+    void (*RST_SetState)(enum ILI9488_PinState state);
+    enum ILI9488_Status (*SPI_Transmit)(uint8_t *data, uint16_t size);
+    void (*Delay)(uint32_t delay);  // Delay in ms
+};
+
+/* ---------- Exported constants ---------------------------------------------*/
 // Parameter settings
 #define HORIZONTAL_RES  480
 #define VERTICAL_RES    320 
@@ -83,7 +100,7 @@ struct ILI9488_GPIO_Tuple {
     uint16_t GPIO_Pin;
 };
 /* ---------- Exported constants ---------------------------------------------*/
-#define ILI9488_SPI_Handle hspi3
+#define ILI9488_SPI_Handle hspi2
 /* ---------- Exported variables ---------------------------------------------*/
 /* ---------- Exported macros ------------------------------------------------*/
 /* ---------- Exported functions ---------------------------------------------*/
