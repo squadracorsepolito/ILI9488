@@ -16,18 +16,31 @@
 #define _ILI9488_H_
 
 /* ---------- Includes -------------------------------------------------------*/
+
+#include "gpio.h"
+#include "spi.h"
 #include "stdint.h"
 
 /* ---------- Exported types -------------------------------------------------*/
+struct Gpio_Tuple {
+    GPIO_TypeDef *GPIO_Port;
+    uint16_t GPIO_Pin;
+};
 
 enum ILI9488_PinState { PinState_Reset = 0, PinState_Set };
 enum ILI9488_Status { Status_OK = 0, Status_ERR, Status_Busy, Status_Timeout };
+
+struct ILI9488_GPIO_Map {
+    struct Gpio_Tuple CS;   
+    struct Gpio_Tuple DC;   
+    struct Gpio_Tuple RST;  
+};
 
 struct ILI9488_Handle {
     void (*CS_SetState)(enum ILI9488_PinState state);
     void (*DC_RS_SetState)(enum ILI9488_PinState state);
     void (*RST_SetState)(enum ILI9488_PinState state);
-    enum ILI9488_Status (*SPI_Transmit)(uint8_t *data, uint16_t size);
+    enum ILI9488_Status (*SPI_Transmit_DMA)(uint8_t *data, uint16_t size);
     void (*Delay)(uint32_t delay);  // Delay in ms
 };
 
@@ -96,8 +109,19 @@ struct ILI9488_Handle {
 /* ---------- Exported functions ---------------------------------------------*/
 enum ILI9488_Status ILI9488_write_data(struct ILI9488_Handle *handle, uint8_t data);
 enum ILI9488_Status ILI9488_write_command(struct ILI9488_Handle *handle, uint8_t cmd);
-enum ILI9488_Status ILI9488_init(struct ILI9488_Handle *handle);
-enum ILI9488_Status ILI9488_set_draw_window(struct ILI9488_Handle *handle, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
+enum ILI9488_Status ILI9488_init(struct ILI9488_Handle *handle, struct ILI9488_GPIO_Map *map);
+enum ILI9488_Status ILI9488_set_draw_window(struct ILI9488_Handle *handle,
+                                            uint16_t x1,
+                                            uint16_t y1,
+                                            uint16_t x2,
+                                            uint16_t y2);
+enum ILI9488_Status ILI9488_SPI_Send_DMA(struct ILI9488_Handle *handle, uint8_t *data, uint16_t size);
+
+void ILI9488_CS_Pin_SetState(enum ILI9488_PinState state);
+void ILI9488_DC_Pin_SetState(enum ILI9488_PinState state);
+void ILI9488_RST_Pin_SetState(enum ILI9488_PinState state);
+enum ILI9488_Status ILI9488_SPI_Transmit_DMA(uint8_t *data, uint16_t size);
+void ILI9488_Delay(uint32_t delay_ms);
 /* ---------- Private types --------------------------------------------------*/
 /* ---------- Private variables ----------------------------------------------*/
 /* ---------- Private constants ----------------------------------------------*/

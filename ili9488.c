@@ -20,15 +20,20 @@
 /*---------- Private macro ---------------------------------------------------*/
 
 /*---------- Private variables -----------------------------------------------*/
-
+static struct ILI9488_GPIO_Map *ILI9488_gpio_map = NULL;
 /*---------- Private function prototypes -------------------------------------*/
 static void ILI9488_swap_int(uint16_t *num1, uint16_t *num2);
 static enum ILI9488_Status ILI9488_init_command_list(struct ILI9488_Handle *handle);
+void ILI9488_Set_GPIO_Map(struct ILI9488_GPIO_Map *map);
 /*---------- Exported Variables ----------------------------------------------*/
 
 /*---------- Exported Functions ----------------------------------------------*/
 
 /*---------- Private Functions -----------------------------------------------*/
+
+void ILI9488_Set_GPIO_Map(struct ILI9488_GPIO_Map *map) {
+    ILI9488_gpio_map = map;
+}
 
 /*
  * Writes a data byte to the display. Pulls CS low as required.
@@ -38,7 +43,7 @@ enum ILI9488_Status ILI9488_write_data(struct ILI9488_Handle *handle, uint8_t da
     enum ILI9488_Status ret = Status_OK;
     handle->DC_RS_SetState(PinState_Set);
     handle->CS_SetState(PinState_Reset);
-    ret = handle->SPI_Transmit(&data, 1);
+    ret = handle->SPI_Transmit_DMA(&data, 1);
     handle->CS_SetState(PinState_Set);
     return ret;
 }
@@ -50,7 +55,7 @@ enum ILI9488_Status ILI9488_write_command(struct ILI9488_Handle *handle, uint8_t
     enum ILI9488_Status ret = Status_OK;
     handle->DC_RS_SetState(PinState_Reset);
     handle->CS_SetState(PinState_Reset);
-    ret = handle->SPI_Transmit(&cmd, 1);
+    ret = handle->SPI_Transmit_DMA(&cmd, 1);
     handle->CS_SetState(PinState_Set);
     return ret;
 }
@@ -68,13 +73,19 @@ static void ILI9488_swap_int(uint16_t *num1, uint16_t *num2) {
  * Same as above, but initialises with an SPI port instead.
  */
 #include <stddef.h>
-enum ILI9488_Status ILI9488_init(struct ILI9488_Handle *handle) {
+enum ILI9488_Status ILI9488_init(struct ILI9488_Handle *handle, struct ILI9488_GPIO_Map *map) {
     if (handle == NULL)
         return Status_ERR;
 
     if (handle->CS_SetState == NULL || handle->DC_RS_SetState == NULL || handle->RST_SetState == NULL ||
-        handle->SPI_Transmit == NULL || handle->Delay == NULL)
+        handle->SPI_Transmit_DMA == NULL || handle->Delay == NULL)
         return Status_ERR;
+
+    if (map->CS.GPIO_Port == NULL || map->DC.GPIO_Port == NULL || map->RST.GPIO_Port == NULL) {
+        return Status_ERR;
+    }else{
+      ILI9488_Set_GPIO_Map(map);
+    }
 
     // SET control pins for the LCD HIGH (they are active LOW)
     handle->RST_SetState(PinState_Set);    // RESET pin HIGH (Active LOW)
@@ -110,7 +121,7 @@ static enum ILI9488_Status ILI9488_init_command_list(struct ILI9488_Handle *hand
     tmp += (uint8_t)ILI9488_write_data(handle, 0x30);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x3E);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x0F);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     tmp += (uint8_t)ILI9488_write_command(handle, 0XE1);  // N-Gamma
     tmp += (uint8_t)ILI9488_write_data(handle, 0x00);
@@ -128,22 +139,22 @@ static enum ILI9488_Status ILI9488_init_command_list(struct ILI9488_Handle *hand
     tmp += (uint8_t)ILI9488_write_data(handle, 0x31);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x37);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x0F);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     tmp += (uint8_t)ILI9488_write_command(handle, 0xC0);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x18);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x16);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     tmp += (uint8_t)ILI9488_write_command(handle, 0xC1);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x45);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     tmp += (uint8_t)ILI9488_write_command(handle, 0xC5);  // VCOM
     tmp += (uint8_t)ILI9488_write_data(handle, 0x00);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x63);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x01);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
 
     tmp += (uint8_t)ILI9488_write_command(handle, 0x36);  // RAM address mode
@@ -152,55 +163,55 @@ static enum ILI9488_Status ILI9488_init_command_list(struct ILI9488_Handle *hand
         tmp += (uint8_t)ILI9488_write_data(handle, 0xF8);
     else
         tmp += (uint8_t)ILI9488_write_data(handle, 0x5C);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
 
     tmp += (uint8_t)ILI9488_write_command(handle, 0x3A);  // Interface Mode Control
     tmp += (uint8_t)ILI9488_write_data(handle, 0x66);     // 16-bit serial mode
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     tmp += (uint8_t)ILI9488_write_command(handle, 0xB0);  // Interface Mode Control
     tmp += (uint8_t)ILI9488_write_data(handle, 0x80);     // SDO not in use
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     tmp += (uint8_t)ILI9488_write_command(handle, 0xB1);  // Frame rate 70HZ
     tmp += (uint8_t)ILI9488_write_data(handle, 0x00);     //
     tmp += (uint8_t)ILI9488_write_data(handle, 0x10);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     tmp += (uint8_t)ILI9488_write_command(handle, 0xB4);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x02);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
 
     tmp += (uint8_t)ILI9488_write_command(handle, 0xB6);  // RGB/MCU Interface Control
     tmp += (uint8_t)ILI9488_write_data(handle, 0x02);
     // tmp += (uint8_t)ILI9488_write_data(handle,0x22);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
 
     tmp += (uint8_t)ILI9488_write_command(handle, 0xE9);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x00);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     tmp += (uint8_t)ILI9488_write_command(handle, 0xF7);
     tmp += (uint8_t)ILI9488_write_data(handle, 0xA9);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x51);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x2C);
     tmp += (uint8_t)ILI9488_write_data(handle, 0x82);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     tmp += (uint8_t)ILI9488_write_command(handle, 0x11);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     handle->Delay(120);
     tmp += (uint8_t)ILI9488_write_command(handle, 0x20);  // change it to 0x21 if you want to invert colors
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
 
     handle->Delay(120);
     tmp += (uint8_t)ILI9488_write_command(handle, 0x29);
-    if (!tmp)
+    if (tmp == 1)
         return Status_ERR;
     return Status_OK;
 }
@@ -210,7 +221,11 @@ static enum ILI9488_Status ILI9488_init_command_list(struct ILI9488_Handle *hand
  * Should only be called within a function that draws something
  * to the display.
  */
-enum ILI9488_Status ILI9488_set_draw_window(struct ILI9488_Handle *handle, uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
+enum ILI9488_Status ILI9488_set_draw_window(struct ILI9488_Handle *handle,
+                                            uint16_t x1,
+                                            uint16_t y1,
+                                            uint16_t x2,
+                                            uint16_t y2) {
     uint8_t tmp;
     // Check that the values are in order
     if (x2 < x1)
@@ -218,27 +233,69 @@ enum ILI9488_Status ILI9488_set_draw_window(struct ILI9488_Handle *handle, uint1
     if (y2 < y1)
         ILI9488_swap_int(&y2, &y1);
 
-    tmp += (uint8_t)ILI9488_write_command(handle,ILI9488_CASET);
-    tmp += (uint8_t)ILI9488_write_data(handle,x1 >> 8);
-    tmp += (uint8_t)ILI9488_write_data(handle,x1 & 0xFF);
+    tmp += (uint8_t)ILI9488_write_command(handle, ILI9488_CASET);
+    tmp += (uint8_t)ILI9488_write_data(handle, x1 >> 8);
+    tmp += (uint8_t)ILI9488_write_data(handle, x1 & 0xFF);
 
-    tmp += (uint8_t)ILI9488_write_data(handle,x2 >> 8);
-    tmp += (uint8_t)ILI9488_write_data(handle,x2 & 0xFF);
-    if (!tmp)
+    tmp += (uint8_t)ILI9488_write_data(handle, x2 >> 8);
+    tmp += (uint8_t)ILI9488_write_data(handle, x2 & 0xFF);
+    if (tmp == 1)
         return Status_ERR;
 
-    tmp += (uint8_t)ILI9488_write_command(handle,ILI9488_PASET);
-    tmp += (uint8_t)ILI9488_write_data(handle,y1 >> 8);
-    tmp += (uint8_t)ILI9488_write_data(handle,y1 & 0xFF);
+    tmp += (uint8_t)ILI9488_write_command(handle, ILI9488_PASET);
+    tmp += (uint8_t)ILI9488_write_data(handle, y1 >> 8);
+    tmp += (uint8_t)ILI9488_write_data(handle, y1 & 0xFF);
 
-    tmp += (uint8_t)ILI9488_write_data(handle,y2 >> 8);
-    tmp += (uint8_t)ILI9488_write_data(handle,y2 & 0xFF);
-    if (!tmp)
+    tmp += (uint8_t)ILI9488_write_data(handle, y2 >> 8);
+    tmp += (uint8_t)ILI9488_write_data(handle, y2 & 0xFF);
+    if (tmp == 1)
         return Status_ERR;
 
-    tmp += (uint8_t)ILI9488_write_command(handle,ILI9488_RAMWR);
-    if (!tmp)
+    tmp += (uint8_t)ILI9488_write_command(handle, ILI9488_RAMWR);
+    if (tmp == 1)
         return Status_ERR;
 
     return Status_OK;
+}
+
+enum ILI9488_Status ILI9488_SPI_Send_DMA(struct ILI9488_Handle *handle, uint8_t *data, uint16_t size) {
+    handle->DC_RS_SetState(PinState_Set);  // RESET pin HIGH (Active LOW)
+    handle->CS_SetState(PinState_Reset);   // RESET pin HIGH (Active LOW)
+
+    enum ILI9488_Status status = handle->SPI_Transmit_DMA(data, size);
+    return status;
+}
+
+void ILI9488_CS_Pin_SetState(enum ILI9488_PinState state) {
+    HAL_GPIO_WritePin(ILI9488_gpio_map->CS.GPIO_Port,
+                      ILI9488_gpio_map->CS.GPIO_Pin,
+                      (state == PinState_Set) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+void ILI9488_DC_Pin_SetState(enum ILI9488_PinState state) {
+    HAL_GPIO_WritePin(ILI9488_gpio_map->DC.GPIO_Port,
+                      ILI9488_gpio_map->DC.GPIO_Pin,
+                      (state == PinState_Set) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+void ILI9488_RST_Pin_SetState( enum ILI9488_PinState state) {
+    HAL_GPIO_WritePin(ILI9488_gpio_map->RST.GPIO_Port,
+                      ILI9488_gpio_map->RST.GPIO_Pin,
+                      (state == PinState_Set) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+enum ILI9488_Status ILI9488_SPI_Transmit_DMA(uint8_t *data, uint16_t size) {
+    if (HAL_SPI_Transmit_DMA(&hspi1, data, size) == HAL_OK) {
+        uint32_t timeout = 1000;
+        while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY && timeout > 0) {
+            timeout--;
+            ILI9488_Delay(1);
+        }
+        return (timeout > 0) ? Status_OK : Status_Timeout;
+    }
+    return Status_ERR;
+}
+
+void ILI9488_Delay(uint32_t delay_ms) {
+    HAL_Delay(delay_ms);
 }
