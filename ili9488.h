@@ -46,9 +46,9 @@ struct ILI9488_Handle {
 
 /* ---------- Exported constants ---------------------------------------------*/
 // Parameter settings
-#define HORIZONTAL_RES 480
-#define VERTICAL_RES   320
-#define LANDSCAPE      1
+#define ILI9488_HORIZONTAL_RES 480
+#define ILI9488_VERTICAL_RES   320
+#define ILI9488_LANDSCAPE      1
 
 // Registers (DO NOT CHANGE)
 #define ILI9488_NOP     0x00
