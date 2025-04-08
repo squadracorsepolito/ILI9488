@@ -20,20 +20,15 @@
 /*---------- Private macro ---------------------------------------------------*/
 
 /*---------- Private variables -----------------------------------------------*/
-static struct ILI9488_GPIO_Map *ILI9488_gpio_map = NULL;
 /*---------- Private function prototypes -------------------------------------*/
 static void ILI9488_swap_int(uint16_t *num1, uint16_t *num2);
 static enum ILI9488_Status ILI9488_init_command_list(struct ILI9488_Handle *handle);
-void ILI9488_Set_GPIO_Map(struct ILI9488_GPIO_Map *map);
 /*---------- Exported Variables ----------------------------------------------*/
 
 /*---------- Exported Functions ----------------------------------------------*/
 
 /*---------- Private Functions -----------------------------------------------*/
 
-void ILI9488_Set_GPIO_Map(struct ILI9488_GPIO_Map *map) {
-    ILI9488_gpio_map = map;
-}
 
 /*
  * Writes a data byte to the display. Pulls CS low as required.
@@ -73,19 +68,13 @@ static void ILI9488_swap_int(uint16_t *num1, uint16_t *num2) {
  * Same as above, but initialises with an SPI port instead.
  */
 #include <stddef.h>
-enum ILI9488_Status ILI9488_init(struct ILI9488_Handle *handle, struct ILI9488_GPIO_Map *map) {
+enum ILI9488_Status ILI9488_init(struct ILI9488_Handle *handle) {
     if (handle == NULL)
         return Status_ERR;
 
     if (handle->CS_SetState == NULL || handle->DC_RS_SetState == NULL || handle->RST_SetState == NULL ||
         handle->SPI_Transmit_DMA == NULL || handle->Delay == NULL)
         return Status_ERR;
-
-    if (map->CS.GPIO_Port == NULL || map->DC.GPIO_Port == NULL || map->RST.GPIO_Port == NULL) {
-        return Status_ERR;
-    }else{
-      ILI9488_Set_GPIO_Map(map);
-    }
 
     // SET control pins for the LCD HIGH (they are active LOW)
     handle->RST_SetState(PinState_Set);    // RESET pin HIGH (Active LOW)
@@ -258,44 +247,11 @@ enum ILI9488_Status ILI9488_set_draw_window(struct ILI9488_Handle *handle,
     return Status_OK;
 }
 
-enum ILI9488_Status ILI9488_SPI_Send_DMA(struct ILI9488_Handle *handle, uint8_t *data, uint16_t size) {
+//TODO add a comment that explain that is called after ILI9488_set_draw_window
+enum ILI9488_Status ILI9488_draw(struct ILI9488_Handle *handle, uint8_t *data, uint16_t size) {
     handle->DC_RS_SetState(PinState_Set);  // RESET pin HIGH (Active LOW)
     handle->CS_SetState(PinState_Reset);   // RESET pin HIGH (Active LOW)
 
     enum ILI9488_Status status = handle->SPI_Transmit_DMA(data, size);
     return status;
-}
-
-void ILI9488_CS_Pin_SetState(enum ILI9488_PinState state) {
-    HAL_GPIO_WritePin(ILI9488_gpio_map->CS.GPIO_Port,
-                      ILI9488_gpio_map->CS.GPIO_Pin,
-                      (state == PinState_Set) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-}
-
-void ILI9488_DC_Pin_SetState(enum ILI9488_PinState state) {
-    HAL_GPIO_WritePin(ILI9488_gpio_map->DC.GPIO_Port,
-                      ILI9488_gpio_map->DC.GPIO_Pin,
-                      (state == PinState_Set) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-}
-
-void ILI9488_RST_Pin_SetState( enum ILI9488_PinState state) {
-    HAL_GPIO_WritePin(ILI9488_gpio_map->RST.GPIO_Port,
-                      ILI9488_gpio_map->RST.GPIO_Pin,
-                      (state == PinState_Set) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-}
-
-enum ILI9488_Status ILI9488_SPI_Transmit_DMA(uint8_t *data, uint16_t size) {
-    if (HAL_SPI_Transmit_DMA(&hspi1, data, size) == HAL_OK) {
-        uint32_t timeout = 1000;
-        while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY && timeout > 0) {
-            timeout--;
-            ILI9488_Delay(1);
-        }
-        return (timeout > 0) ? Status_OK : Status_Timeout;
-    }
-    return Status_ERR;
-}
-
-void ILI9488_Delay(uint32_t delay_ms) {
-    HAL_Delay(delay_ms);
 }
