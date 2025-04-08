@@ -22,19 +22,8 @@
 #include "stdint.h"
 
 /* ---------- Exported types -------------------------------------------------*/
-struct Gpio_Tuple {
-    GPIO_TypeDef *GPIO_Port;
-    uint16_t GPIO_Pin;
-};
-
 enum ILI9488_PinState { PinState_Reset = 0, PinState_Set };
 enum ILI9488_Status { Status_OK = 0, Status_ERR, Status_Busy, Status_Timeout };
-
-struct ILI9488_GPIO_Map {
-    struct Gpio_Tuple CS;   
-    struct Gpio_Tuple DC;   
-    struct Gpio_Tuple RST;  
-};
 
 struct ILI9488_Handle {
     void (*CS_SetState)(enum ILI9488_PinState state);
