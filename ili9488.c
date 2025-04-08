@@ -41,7 +41,7 @@ enum ILI9488_Status ILI9488_write_data(struct ILI9488_Handle *handle, uint8_t da
     ret = handle->SPI_Transmit_DMA(&data, 1);
     handle->CS_SetState(PinState_Set);
     return ret;
-
+}
 
 /*
  * Writes a command byte to the display
