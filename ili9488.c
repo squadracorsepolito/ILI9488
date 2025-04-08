@@ -20,6 +20,7 @@
 /*---------- Private macro ---------------------------------------------------*/
 
 /*---------- Private variables -----------------------------------------------*/
+
 /*---------- Private function prototypes -------------------------------------*/
 static void ILI9488_swap_int(uint16_t *num1, uint16_t *num2);
 static enum ILI9488_Status ILI9488_init_command_list(struct ILI9488_Handle *handle);
@@ -28,7 +29,6 @@ static enum ILI9488_Status ILI9488_init_command_list(struct ILI9488_Handle *hand
 /*---------- Exported Functions ----------------------------------------------*/
 
 /*---------- Private Functions -----------------------------------------------*/
-
 
 /*
  * Writes a data byte to the display. Pulls CS low as required.
@@ -41,7 +41,7 @@ enum ILI9488_Status ILI9488_write_data(struct ILI9488_Handle *handle, uint8_t da
     ret = handle->SPI_Transmit_DMA(&data, 1);
     handle->CS_SetState(PinState_Set);
     return ret;
-}
+
 
 /*
  * Writes a command byte to the display
