@@ -149,7 +149,7 @@ static enum ILI9488_Status ILI9488_init_command_list(struct ILI9488_Handle *hand
     tmp += (uint8_t)ILI9488_write_command(handle, 0x36);  // RAM address mode
     // 0xF8 and 0x3C are landscape mode. 0x5C and 0x9C for portrait mode.
     if (ILI9488_LANDSCAPE)
-        tmp += (uint8_t)ILI9488_write_data(handle, 0xF8);
+        tmp += (uint8_t)ILI9488_write_data(handle, 0x3C);
     else
         tmp += (uint8_t)ILI9488_write_data(handle, 0x5C);
     if (tmp == 1)
